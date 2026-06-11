@@ -1,0 +1,44 @@
+{
+  "observation_space": "Box([-1.2  -0.07], [0.6  0.07], (2,), float32)",
+  "action_space": "Discrete(3)",
+  "episodios_aleatorios": [
+    {
+      "episodio": 1,
+      "recompensa": -200.0,
+      "pasos": 200
+    },
+    {
+      "episodio": 2,
+      "recompensa": -200.0,
+      "pasos": 200
+    },
+    {
+      "episodio": 3,
+      "recompensa": -200.0,
+      "pasos": 200
+    },
+    {
+      "episodio": 4,
+      "recompensa": -200.0,
+      "pasos": 200
+    },
+    {
+      "episodio": 5,
+      "recompensa": -200.0,
+      "pasos": 200
+    }
+  ],
+  "recompensa_promedio": -200.0,
+  "recompensa_min": -200.0,
+  "recompensa_max": -200.0,
+  "q_table_shape": [
+    24,
+    20,
+    3
+  ],
+  "q_table_entries": 1440,
+  "bins": {
+    "posicion": 24,
+    "velocidad": 20
+  }
+}

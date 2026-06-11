@@ -1,0 +1,15 @@
+{
+  "alpha": 0.15,
+  "gamma": 0.99,
+  "epsilon_inicial": 1.0,
+  "epsilon_min": 0.08,
+  "epsilon_decay": 0.99975,
+  "episodios": 20000,
+  "bins_posicion": 24,
+  "bins_velocidad": 20,
+  "justificacion": {
+    "gamma_alto": "Recompensa -1 por paso exige valorar trayectorias cortas hacia la meta.",
+    "exploracion_larga": "MountainCar es sparse-reward; requiere epsilon alto por mas tiempo.",
+    "mas_bins": "Mayor granularidad en posicion/velocidad para capturar impulso en la cuesta."
+  }
+}

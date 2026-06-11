@@ -1,0 +1,28 @@
+{
+  "errores": [
+    {
+      "linea": "GAMMA=0.0",
+      "elemento_mdp": "retorno",
+      "problema": "Ignora recompensas futuras; el retorno G_t deja de propagarse.",
+      "correccion": "GAMMA=0.99"
+    },
+    {
+      "linea": "a = np.argmax(Q[s])",
+      "elemento_mdp": "exploracion / politica",
+      "problema": "Siempre explota sin epsilon-greedy; no visita estados-acciones nuevos.",
+      "correccion": "Seleccion epsilon-greedy entre explorar y explotar."
+    },
+    {
+      "linea": "EPS_DECAY=1.0",
+      "elemento_mdp": "exploracion",
+      "problema": "Epsilon nunca decae, impidiendo converger a una politica estable.",
+      "correccion": "EPS_DECAY=0.9995 con epsilon usado en la seleccion de acciones."
+    },
+    {
+      "linea": "np.max(Q[s]) en la actualizacion",
+      "elemento_mdp": "funcion Q",
+      "problema": "Bootstrap con el estado actual viola la ecuacion de Bellman de Q-Learning.",
+      "correccion": "Usar np.max(Q[s2]) y 0 cuando el episodio termina."
+    }
+  ]
+}

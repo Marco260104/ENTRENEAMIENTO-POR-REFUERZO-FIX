@@ -1,0 +1,14 @@
+{
+  "roto": {
+    "promedio": 9.3,
+    "maxima": 10.0,
+    "minima": 8.0,
+    "episodios": 20
+  },
+  "corregido": {
+    "promedio": 131.35,
+    "maxima": 198.0,
+    "minima": 42.0,
+    "episodios": 20
+  }
+}

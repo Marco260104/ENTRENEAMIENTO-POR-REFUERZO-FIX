@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Aprendizaje por Refuerzo</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Aprendizaje por refuerzo</p>
+        <h1>Laboratorio RL: CartPole, MountainCar e Inventario</h1>
+        <p class="lead">Ingresa datos de estado y el agente entrenado responde con la accion recomendada segun su Q-table.</p>
+      </div>
+      <div class="status-card">
+        <p class="label">Estado del sistema</p>
+        {% if status.ready %}
+          <p class="status-ok">Modelos cargados y listos</p>
+        {% else %}
+          <p class="status-bad">Faltan modelos: {{ status.missing }}</p>
+        {% endif %}
+        <div class="actions">
+          <button id="btn-retrain" class="secondary">Re-entrenar todo</button>
+        </div>
+      </div>
+    </header>
+
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="tab-a">Parte A · CartPole</button>
+      <button class="tab-btn" data-tab="tab-b">Parte B · MountainCar</button>
+      <button class="tab-btn" data-tab="tab-c">Parte C · Inventario</button>
+    </nav>
+
+    <section id="tab-a" class="tab-panel active">
+      <div class="panel-head">
+        <h2>Parte A — Diagnostico CartPole</h2>
+        <p>Comparacion entre agente roto y agente corregido con media movil de 100 episodios.</p>
+      </div>
+
+      <div class="grid-2">
+        <div class="chart-box">
+          <canvas id="chart-cartpole"></canvas>
+        </div>
+        <div class="img-box">
+          {% if cartpole_img %}
+            <img src="data:image/png;base64,{{ cartpole_img }}" alt="CartPole roto vs corregido">
+          {% endif %}
+        </div>
+      </div>
+
+      {% if parte_a_eval %}
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Agente</th>
+              <th>Promedio (20 ep.)</th>
+              <th>Maxima</th>
+              <th>Minima</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Roto</td>
+              <td>{{ "%.2f"|format(parte_a_eval.roto.promedio) }}</td>
+              <td>{{ "%.2f"|format(parte_a_eval.roto.maxima) }}</td>
+              <td>{{ "%.2f"|format(parte_a_eval.roto.minima) }}</td>
+            </tr>
+            <tr>
+              <td>Corregido</td>
+              <td>{{ "%.2f"|format(parte_a_eval.corregido.promedio) }}</td>
+              <td>{{ "%.2f"|format(parte_a_eval.corregido.maxima) }}</td>
+              <td>{{ "%.2f"|format(parte_a_eval.corregido.minima) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+
+      <div class="predict-panel">
+        <h3>Probar agente con tus datos</h3>
+        <p>Ingresa el estado del entorno y consulta que accion elegiria el agente entrenado.</p>
+        <form id="form-cartpole" class="form-grid">
+          <div class="field">
+            <label>Posicion carro (-2.4 a 2.4)</label>
+            <input type="number" step="0.01" name="posicion_carro" value="0.02" required>
+          </div>
+          <div class="field">
+            <label>Velocidad carro (-3 a 3)</label>
+            <input type="number" step="0.01" name="velocidad_carro" value="-0.2" required>
+          </div>
+          <div class="field">
+            <label>Angulo palo rad (-0.3 a 0.3)</label>
+            <input type="number" step="0.01" name="angulo_palo" value="0.04" required>
+          </div>
+          <div class="field">
+            <label>Velocidad angular (-3 a 3)</label>
+            <input type="number" step="0.01" name="velocidad_angular" value="0.3" required>
+          </div>
+          <div class="field">
+            <label>Agente</label>
+            <select name="agente">
+              <option value="corregido" selected>Corregido</option>
+              <option value="roto">Roto</option>
+            </select>
+          </div>
+        </form>
+        <div class="actions">
+          <button type="button" id="btn-predict-cartpole">Consultar accion</button>
+          <button data-run="cartpole" data-agent="corregido" class="secondary">Ejecutar episodio completo</button>
+        </div>
+        <div id="result-a" class="result-card" hidden>
+          <h4>Respuesta del agente</h4>
+          <p class="result-highlight" id="result-a-action"></p>
+          <p class="result-meta" id="result-a-meta"></p>
+        </div>
+      </div>
+      <pre id="log-a" class="log-box">Ingresa valores y presiona Consultar accion.</pre>
+    </section>
+
+    <section id="tab-b" class="tab-panel">
+      <div class="panel-head">
+        <h2>Parte B — MountainCar-v0</h2>
+        <p>Exploracion del entorno, forma de la Q-table y curva de aprendizaje.</p>
+      </div>
+
+      <div class="kv">
+        <div class="kv-item"><strong>Q-table shape</strong>{{ q_shapes.mountaincar }}</div>
+        <div class="kv-item"><strong>Entradas totales</strong>{{ q_shapes.mountaincar | join(' x ') if q_shapes.mountaincar else 'N/A' }}</div>
+        {% if parte_b_explore %}
+        <div class="kv-item"><strong>Recompensa aleatoria</strong>{{ "%.1f"|format(parte_b_explore.recompensa_promedio) }}</div>
+        {% endif %}
+        {% if parte_b_eval %}
+        <div class="kv-item"><strong>Evaluacion promedio</strong>{{ "%.1f"|format(parte_b_eval.promedio) }}</div>
+        {% endif %}
+      </div>
+
+      {% if parte_b_hparams %}
+      <div class="kv" style="margin-top:10px;">
+        <div class="kv-item"><strong>Alpha</strong>{{ parte_b_hparams.alpha }}</div>
+        <div class="kv-item"><strong>Gamma</strong>{{ parte_b_hparams.gamma }}</div>
+        <div class="kv-item"><strong>Epsilon decay</strong>{{ parte_b_hparams.epsilon_decay }}</div>
+        <div class="kv-item"><strong>Bins posicion</strong>{{ parte_b_hparams.bins_posicion }}</div>
+        <div class="kv-item"><strong>Bins velocidad</strong>{{ parte_b_hparams.bins_velocidad }}</div>
+      </div>
+      {% endif %}
+
+      <div class="grid-2" style="margin-top:16px;">
+        <div class="chart-box">
+          <canvas id="chart-mountain"></canvas>
+        </div>
+        <div class="img-box">
+          {% if mountain_img %}
+            <img src="data:image/png;base64,{{ mountain_img }}" alt="Curva MountainCar">
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="predict-panel">
+        <h3>Probar agente con tus datos</h3>
+        <p>Ingresa posicion y velocidad del auto en la montana.</p>
+        <form id="form-mountain" class="form-grid">
+          <div class="field">
+            <label>Posicion (-1.2 a 0.6)</label>
+            <input type="number" step="0.01" name="posicion" value="-0.5" required>
+          </div>
+          <div class="field">
+            <label>Velocidad (-0.07 a 0.07)</label>
+            <input type="number" step="0.001" name="velocidad" value="0.0" required>
+          </div>
+        </form>
+        <div class="actions">
+          <button type="button" id="btn-predict-mountain">Consultar accion</button>
+          <button data-run="mountaincar" class="secondary">Ejecutar episodio completo</button>
+        </div>
+        <div id="result-b" class="result-card" hidden>
+          <h4>Respuesta del agente</h4>
+          <p class="result-highlight" id="result-b-action"></p>
+          <p class="result-meta" id="result-b-meta"></p>
+        </div>
+      </div>
+      <pre id="log-b" class="log-box">Ingresa valores y presiona Consultar accion.</pre>
+    </section>
+
+    <section id="tab-c" class="tab-panel">
+      <div class="panel-head">
+        <h2>Parte C — Entorno propio de inventario</h2>
+        <p>MDP simulado en Python puro con acciones de reposicion de stock.</p>
+      </div>
+
+      {% if parte_c_mdp %}
+      <div class="kv">
+        <div class="kv-item"><strong>S</strong>{{ parte_c_mdp.S }}</div>
+        <div class="kv-item"><strong>A</strong>{{ parte_c_mdp.A }}</div>
+        <div class="kv-item"><strong>R</strong>{{ parte_c_mdp.R }}</div>
+        <div class="kv-item"><strong>Gamma</strong>{{ parte_c_mdp.gamma }}</div>
+      </div>
+      {% endif %}
+
+      <div class="grid-2" style="margin-top:16px;">
+        <div class="chart-box">
+          <canvas id="chart-inventory"></canvas>
+        </div>
+        <div class="img-box">
+          {% if inventory_img %}
+            <img src="data:image/png;base64,{{ inventory_img }}" alt="Curva inventario">
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="predict-panel">
+        <h3>Probar agente con tus datos</h3>
+        <p>Ingresa el estado de la tienda y el agente decide cuanto pedir.</p>
+        <form id="form-inventario" class="form-grid">
+          <div class="field">
+            <label>Stock actual (0 a 36 uds)</label>
+            <input type="number" step="1" name="stock" value="10" min="0" max="36" required>
+          </div>
+          <div class="field">
+            <label>Nivel de demanda (0 a 7)</label>
+            <input type="number" step="1" name="demanda_nivel" value="5" min="0" max="7" required>
+          </div>
+          <div class="field">
+            <label>Dias hasta entrega pendiente (0 a 4)</label>
+            <input type="number" step="1" name="dias_entrega" value="0" min="0" max="4" required>
+          </div>
+        </form>
+        <div class="actions">
+          <button type="button" id="btn-predict-inventario">Consultar accion</button>
+          <button data-run="inventario" class="secondary">Ejecutar episodio completo</button>
+        </div>
+        <div id="result-c" class="result-card" hidden>
+          <h4>Respuesta del agente</h4>
+          <p class="result-highlight" id="result-c-action"></p>
+          <p class="result-meta" id="result-c-meta"></p>
+        </div>
+      </div>
+      <pre id="log-c" class="log-box">Ingresa valores y presiona Consultar accion.</pre>
+    </section>
+  </main>
+
+  <script>
+    const cartpoleCurve = {{ cartpole_curve | tojson }};
+    const mountainCurve = {{ mountain_curve | tojson }};
+    const inventoryCurve = {{ inventory_curve | tojson }};
+
+    function makeLineChart(canvasId, labels, datasets) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas || !labels || labels.length === 0) return;
+      new Chart(canvas, {
+        type: "line",
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: "bottom" } },
+          scales: { y: { beginAtZero: false } }
+        }
+      });
+    }
+
+    if (cartpoleCurve) {
+      const len = Math.max(cartpoleCurve.roto.length, cartpoleCurve.corregido.length);
+      const labels = Array.from({ length: len }, (_, i) => i + 1);
+      makeLineChart("chart-cartpole", labels, [
+        { label: "Roto (MA100)", data: cartpoleCurve.roto, borderColor: "#c0392b", tension: 0.2 },
+        { label: "Corregido (MA100)", data: cartpoleCurve.corregido, borderColor: "#1f7a4c", tension: 0.2 }
+      ]);
+    }
+
+    if (mountainCurve) {
+      const labels = Array.from({ length: mountainCurve.length }, (_, i) => i + 1);
+      makeLineChart("chart-mountain", labels, [
+        { label: "MountainCar (MA100)", data: mountainCurve, borderColor: "#2c4c7c", tension: 0.2 }
+      ]);
+    }
+
+    if (inventoryCurve) {
+      const labels = Array.from({ length: inventoryCurve.length }, (_, i) => i + 1);
+      makeLineChart("chart-inventory", labels, [
+        { label: "Inventario (MA100)", data: inventoryCurve, borderColor: "#8a4b12", tension: 0.2 }
+      ]);
+    }
+
+    document.querySelectorAll(".tab-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+        document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById(btn.dataset.tab).classList.add("active");
+      });
+    });
+
+    async function runEpisode(type, agent) {
+      let url = `/api/run/${type}`;
+      if (type === "cartpole") url += `/${agent}`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ seed: Math.floor(Math.random() * 100000) })
+      });
+      return response.json();
+    }
+
+    function formatEpisode(result) {
+      const lines = [`Recompensa total: ${result.recompensa_total.toFixed(2)}`];
+      if (typeof result.llego_meta !== "undefined") {
+        lines.push(`Llego a meta: ${result.llego_meta ? "Si" : "No"}`);
+      }
+      lines.push("Pasos:");
+      result.pasos.forEach((step, idx) => {
+        lines.push(`  [${idx + 1}] ${JSON.stringify(step)}`);
+      });
+      return lines.join("\n");
+    }
+
+    function readForm(formId) {
+      const form = document.getElementById(formId);
+      const data = {};
+      new FormData(form).forEach((value, key) => {
+        data[key] = value;
+      });
+      return data;
+    }
+
+    async function predict(type, payload) {
+      let url = `/api/predict/${type}`;
+      if (type === "cartpole") url += `/${payload.agente}`;
+      const body = { ...payload };
+      delete body.agente;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      return response.json();
+    }
+
+    function showResult(prefix, actionText, metaText) {
+      const card = document.getElementById(`result-${prefix}`);
+      document.getElementById(`result-${prefix}-action`).textContent = actionText;
+      document.getElementById(`result-${prefix}-meta`).textContent = metaText;
+      card.hidden = false;
+    }
+
+    document.getElementById("btn-predict-cartpole").addEventListener("click", async () => {
+      const payload = readForm("form-cartpole");
+      const log = document.getElementById("log-a");
+      log.textContent = "Consultando Q-table...";
+      try {
+        const result = await predict("cartpole", payload);
+        if (result.error) {
+          log.textContent = result.error;
+          return;
+        }
+        showResult(
+          "a",
+          `Accion recomendada: ${result.accion_label}`,
+          `${result.interpretacion}\nEstado discreto: [${result.estado_discreto.join(", ")}]\nQ(izq)=${result.q_izquierda.toFixed(3)} | Q(der)=${result.q_derecha.toFixed(3)}`
+        );
+        log.textContent = JSON.stringify(result, null, 2);
+      } catch (error) {
+        log.textContent = `Error: ${error}`;
+      }
+    });
+
+    document.getElementById("btn-predict-mountain").addEventListener("click", async () => {
+      const payload = readForm("form-mountain");
+      const log = document.getElementById("log-b");
+      log.textContent = "Consultando Q-table...";
+      try {
+        const result = await predict("mountaincar", payload);
+        if (result.error) {
+          log.textContent = result.error;
+          return;
+        }
+        showResult(
+          "b",
+          `Accion recomendada: ${result.accion_label}`,
+          `${result.interpretacion}\nEstado discreto: [${result.estado_discreto.join(", ")}]\nQ(izq)=${result.q_izquierda.toFixed(3)} | Q(neutro)=${result.q_neutro.toFixed(3)} | Q(der)=${result.q_derecha.toFixed(3)}`
+        );
+        log.textContent = JSON.stringify(result, null, 2);
+      } catch (error) {
+        log.textContent = `Error: ${error}`;
+      }
+    });
+
+    document.getElementById("btn-predict-inventario").addEventListener("click", async () => {
+      const payload = readForm("form-inventario");
+      const log = document.getElementById("log-c");
+      log.textContent = "Consultando Q-table...";
+      try {
+        const result = await predict("inventario", payload);
+        if (result.error) {
+          log.textContent = result.error;
+          return;
+        }
+        showResult(
+          "c",
+          `Accion recomendada: ${result.accion_label}`,
+          `${result.interpretacion}\nRiesgo de quiebre: ${result.riesgo_quiebre}\nRecompensa estimada siguiente paso: ${result.recompensa_estimada_siguiente_paso.toFixed(2)}\nQ(no pedir)=${result.q_no_pedir.toFixed(3)} | Q(pequeno)=${result.q_pedido_pequeno.toFixed(3)} | Q(grande)=${result.q_pedido_grande.toFixed(3)}`
+        );
+        log.textContent = JSON.stringify(result, null, 2);
+      } catch (error) {
+        log.textContent = `Error: ${error}`;
+      }
+    });
+
+    document.querySelectorAll("[data-run]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const type = btn.dataset.run;
+        const agent = btn.dataset.agent || "";
+        const logId = type === "cartpole" ? "log-a" : (type === "mountaincar" ? "log-b" : "log-c");
+        const log = document.getElementById(logId);
+        log.textContent = "Ejecutando episodio...";
+        try {
+          const result = await runEpisode(type, agent);
+          if (result.error) {
+            log.textContent = result.error;
+            return;
+          }
+          log.textContent = formatEpisode(result);
+        } catch (error) {
+          log.textContent = `Error: ${error}`;
+        }
+      });
+    });
+
+    document.getElementById("btn-retrain").addEventListener("click", async () => {
+      const btn = document.getElementById("btn-retrain");
+      btn.disabled = true;
+      btn.textContent = "Entrenando...";
+      try {
+        const response = await fetch("/api/retrain", { method: "POST" });
+        const data = await response.json();
+        alert(data.message || "Entrenamiento finalizado");
+        location.reload();
+      } catch (error) {
+        alert(`Error al re-entrenar: ${error}`);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Re-entrenar todo";
+      }
+    });
+  </script>
+</body>
+</html>

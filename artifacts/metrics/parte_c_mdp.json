@@ -1,0 +1,12 @@
+{
+  "S": "Stock x Demanda x Lead time (12x8x5)",
+  "A": "0=no pedir, 1=pedido pequeno, 2=pedido grande",
+  "R": "Negativo de costos de almacenamiento, quiebre y pedido",
+  "gamma": 0.95,
+  "estado_documentado": [
+    "stock_bin",
+    "demand_level",
+    "lead_time_bin"
+  ],
+  "acciones_minimo": 3
+}
