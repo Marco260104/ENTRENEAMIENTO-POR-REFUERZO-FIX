@@ -1,6 +1,9 @@
 # Laboratorio RL: CartPole, MountainCar e Inventario
 
-**Ingeniería de Software · Docente: Isaac Torres**
+**Estudiante:** Marco Torres  
+**Carrera:** Ingeniería de Software – 7mo Semestre  
+**Docente:** Isaac Torres  
+**Materia:** Aprendizaje por Refuerzo 
 
 ---
 
